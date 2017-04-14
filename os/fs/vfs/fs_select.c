@@ -144,15 +144,19 @@ int select(int nfds, FAR fd_set *readfds, FAR fd_set *writefds, FAR fd_set *exce
 		}
 	}
 
-	if (npfds > 0) {
-		/* Allocate the descriptor list for poll() */
+	if (npfds <= 0) {
+		set_errno(EINVAL);
+		leave_cancellation_point();
+		return ERROR;
+	}
 
-		pollset = (struct pollfd *)kmm_zalloc(npfds * sizeof(struct pollfd));
-		if (!pollset) {
-			set_errno(ENOMEM);
-			leave_cancellation_point();
-			return ERROR;
-		}
+	/* Allocate the descriptor list for poll() */
+
+	pollset = (struct pollfd *)kmm_zalloc(npfds * sizeof(struct pollfd));
+	if (!pollset) {
+		set_errno(ENOMEM);
+		leave_cancellation_point();
+		return ERROR;
 	}
 
 	/* Initialize the descriptor list for poll() */
