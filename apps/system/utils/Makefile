@@ -77,7 +77,6 @@ endif
 ifeq ($(CONFIG_NET_CMDS),y)
 CSRCS += netcmd.c netcmd_ping.c
 endif
-
 endif #CONFIG_TASH
 
 ifeq ($(CONFIG_ENABLE_DATE),y)
@@ -203,3 +202,5 @@ distclean: clean
 	$(call DELFILE, .depend)
 
 -include Make.dep
+.PHONY: preconfig
+preconfig:
