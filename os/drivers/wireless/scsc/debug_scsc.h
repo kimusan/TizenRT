@@ -122,7 +122,7 @@
 #define SLSI_DBG3_NODEV(filter, fmt, arg ...)           do {} while (0)
 #define SLSI_DBG4_NODEV(filter, fmt, arg ...)           do {} while (0)
 
-#elif defined(CONFIG_DEBUG_WLAN_DRIVER_DEBUG)
+#elif defined(CONFIG_DEBUG_WLAN_DRIVER)
 
 #define SLSI_INFO(sdev, fmt, arg ...)                   SLSI_EWI(pr_info, NULL, "I", fmt, ## arg)
 #define SLSI_NET_INFO(ndev, fmt, arg ...)               SLSI_EWI_NET(pr_info, NULL, "I", fmt, ## arg)

@@ -695,19 +695,18 @@ config SCSC_ENABLE_FWFAULT_LOG
 
 comment "SLSI WLAN Driver Debug Options"
 
-config DEBUG_WLAN_DRIVER_DEBUG
+config DEBUG_WLAN_DRIVER
 	bool "Enable DEBUG Debug Output"
 	default y
 	select DEBUG_WLAN_DRIVER_ERROR
 	---help---
 		Enable T20 logs with INFO DEBUG output from the SCSC Wifi driver
 
-if DEBUG_WLAN_DRIVER_DEBUG
+if DEBUG_WLAN_DRIVER
 
 config DEBUG_WLAN_DRIVER_MORE
 	bool "Enable MORE Debug Output"
 	default n
-	select DEBUG_WLAN_DRIVER_DEBUG
 	---help---
 		Enable T20 logs with log level 1 & 2 from the SCSC Wifi driver
 
@@ -724,11 +723,11 @@ config DEBUG_WLAN_DRIVER_VERBOSE
 	---help---
 		Enable T20 logging with ALL log levels from the SCSC Wifi driver.
 
-endif # DEBUG_WLAN_DRIVER_DEBUG
+endif # DEBUG_WLAN_DRIVER
 
 comment "SLSI WPA Supplicant Debug Options"
 
-config DEBUG_WLAN_SUPPLICANT_DEBUG
+config DEBUG_WLAN_SUPPLICANT
 	bool "Enable DEBUG Debug Output"
 	default y
 	depends on WPA_SUPPLICANT
@@ -736,13 +735,12 @@ config DEBUG_WLAN_SUPPLICANT_DEBUG
 	---help---
 		Enables further logging MSG_DEBUG debug output from the SLSI wpa supplicant.
 
-if DEBUG_WLAN_SUPPLICANT_DEBUG
+if DEBUG_WLAN_SUPPLICANT
 
 config DEBUG_WLAN_SUPPLICANT_MORE
 	bool "Enable MORE Debug Output"
 	default n
 	depends on WPA_SUPPLICANT
-	select DEBUG_WLAN_SUPPLICANT_DEBUG
 	---help---
 		Enables further logging MSG_MSGDUMP debug output from the SLSI wpa supplicant.
 
@@ -763,11 +761,11 @@ config DEBUG_WLAN_SUPPLICANT_VERBOSE
 	---help---
 		Enables further logging MGS_EXCESSIVE debug output from the SLSI wpa supplicant.
 
-endif # DEBUG_WLAN_SUPPLICANT_DEBUG
+endif # DEBUG_WLAN_SUPPLICANT
 
 comment "SLSI Wi-Fi API Debug Options"
 
-config DEBUG_WLAN_API_DEBUG
+config DEBUG_WLAN_API
 	bool "Enable DEBUG Output"
 	default y
 	depends on NETUTILS_WIFI
@@ -775,12 +773,11 @@ config DEBUG_WLAN_API_DEBUG
 	---help---
 		Enables DEBUG level debug output for SLSI Wi-Fi API.
 
-if DEBUG_WLAN_API_DEBUG
+if DEBUG_WLAN_API
 
 config DEBUG_WLAN_API_ERROR
 	bool "Enable WLAN API ERROR Debug Output"
 	default y
-	depends on NETUTILS_WIFI
 	---help---
 		Enables ERROR level debug output for SLSI Wi-Fi API.
 		Errors are significant system exceptions that require immediate attention.
@@ -788,12 +785,10 @@ config DEBUG_WLAN_API_ERROR
 config DEBUG_WLAN_API_VERBOSE
 	bool "Enable VERBOSE Debug Output"
 	default n
-	depends on NETUTILS_WIFI
-	select DEBUG_WLAN_API_DEBUG
 	---help---
 		Enables VERBOSE level debug output for SLSI Wi-Fi API.
 
-endif # DEBUG_WLAN_API_DEBUG
+endif # DEBUG_WLAN_API
 
 comment "SLSI Wi-Fi Demo Application Debug Options"
 

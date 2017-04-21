@@ -2927,7 +2927,7 @@ static uint8_t slsi_start_supplicant(void)
 	// Start by creating task for wpa_supplicant
 #ifdef CONFIG_DEBUG_WLAN_SUPPLICANT_ERROR
 	sup_argv[0] = "-dd";		// ERROR + WARN + INFO
-#ifdef CONFIG_DEBUG_WLAN_SUPPLICANT_DEBUG
+#ifdef CONFIG_DEBUG_WLAN_SUPPLICANT
 	sup_argv[0] = "-ddd";		// + DEBUG
 #endif
 #ifdef CONFIG_DEBUG_WLAN_SUPPLICANT_MORE
