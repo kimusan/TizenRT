@@ -33,6 +33,17 @@
 
 #define NET_DEVNAME "wl1"
 
+#if defined(CONFIG_NET_LWIP_DHCPC) && !defined(CONFIG_NETUTILS_DHCPC)
+struct dhcp dhcp_handle;
+#endif
+
+static dm_scan_info_t *appwifiscan_result = NULL;
+static dm_scan_info_t *wifi_iterator;
+
+static char *wifi_aps[] = {"hack07", "hack10", "hack13", "hack14", "hack17", "hack18", "hack21", "hack23", "hack24", "hack28", "hack11"};
+
+static uint8_t appscan_iteration;
+
 #define DM_LIFETIME 300
 #define DM_SERVERIP "192.168.1.152"
 #define DM_SERVERPORT LWM2M_STANDARD_PORT_STR
@@ -45,8 +56,8 @@ extern int dm_lwm2m_change_client_resource(char *buffer);
 static int g_wakaama_initialized;
 
 struct wakaama_param_s {
-	unsigned char serverip[20];
-	unsigned char serverport[6];
+	char serverip[20];
+	char serverport[6];
 	unsigned int lifetime;
 };
 
@@ -99,30 +110,8 @@ static void prv_wakaama_start(void)
 	}
 }
 
-static int app_dhcp_main(void)
-{
-	uint32_t timeleft = 15000;
-	struct dhcpc_state state;
-	void * dhcp_handle;
-	int ret;
 
-	dhcp_handle = dhcpc_open(NET_DEVNAME);
-	ret = dhcpc_request(dhcp_handle, &state);
-	if (ret != OK) {
-			dhcpc_close(dhcp_handle);
-			return -1;
-	}
-
-	netlib_set_ipv4addr(NET_DEVNAME, &state.ipaddr);
-	netlib_set_ipv4netmask(NET_DEVNAME, &state.netmask);
-	netlib_set_dripv4addr(NET_DEVNAME, &state.default_router);
-
-	printf("IP address : %s ----\n", inet_ntoa(state.ipaddr));
-	return 1;
-}
-
-
-static int change_resource(FAR void *arg)
+static void change_resource(FAR void *arg)
 {
 	char argbuffer[20];
 	memset(argbuffer, 0x00, 20);
@@ -130,7 +119,7 @@ static int change_resource(FAR void *arg)
 	dm_lwm2m_change_client_resource(argbuffer);
 }
 
-static conn_cb linkUpEvent()
+static void linkUpEvent(void)
 {
 	isConnected = 1;
 	if (g_wakaama_initialized == 1) {
@@ -150,85 +139,12 @@ static conn_cb linkUpEvent()
 	}
 }
 
-static conn_cb linkDownEvent()
+static void linkDownEvent(void)
 {
 	isConnected = 0;
 	if (g_wakaama_initialized == 1) {
-		int resource_val;
 		printf("about to close wakaama_client\n");
 		dm_lwm2m_stop_client();
-	}
-}
-
-static int wifiAutoConnectInit()
-{
-	int8_t ret;
-	uint8_t result;
-
-	isConnected = 0;
-	dm_conn_register_linkup_cb(linkUpEvent);
-	dm_conn_register_linkdown_cb(linkDownEvent);
-
-	if (WifiIsConnected(&result, NULL) != SLSI_STATUS_SUCCESS) {
-		printf("failed to WifiIsConnected\n");
-		return;
-	}
-
-	if (result > 0) {
-		printf("Wi-Fi status - Connected : %d\n", result);
-		isConnected = 1;
-		return 1;
-	}
-
-	ret = WiFiStart(SLSI_WIFI_STATION_IF, NULL);
-	if (ret == SLSI_STATUS_SUCCESS) {
-		printf("[AutoConnect]STA mode started\n");
-		ret = WiFiNetworkJoin(CONFIG_DM_AP_SSID, strlen(CONFIG_DM_AP_SSID), NULL, get_security_config(CONFIG_DM_AP_SECURITY, CONFIG_DM_AP_PASS));
-		sleep(1);
-		if (ret == SLSI_STATUS_SUCCESS) {
-			printf("[AutoConnect]Start doJoin with SSID %s\n", CONFIG_DM_AP_SSID);
-			return 1;
-		} else {
-			printf("[AutoConnect]Failed to join the network.[%d]\n", ret);
-		}
-		return -1;
-	} else {
-		printf("[AutoConnect]Failed to start STA mode\n");
-	}
-	return -1;
-}
-
-static void wifiAutoConnectDeInit()
-{
-	isConnected = 0;
-	dm_conn_unregister_linkup_cb(linkUpEvent);
-}
-
-static void wifiAutoConnect()
-{
-	int ret;
-	if ((ret = wifiAutoConnectInit()) == 1) {
-		int waitTime = 10;
-		while (waitTime--) {
-			if (isConnected == 1) {
-				printf("[AutoConnect]WiFi Connected!\n");
-				int dhcp_ret = app_dhcp_main();
-				if (dhcp_ret == -1) {
-					printf("Timeout fail to get ip address\n");
-					return dhcp_ret;
-				} else if (dhcp_ret == 0) {
-					printf("No network interface\n");
-					return dhcp_ret;
-				}
-				printf("DHCP done\n");
-				break;
-			}
-			sleep(1);
-		}
-		if (waitTime <= 0) {
-			printf("[AutoConnect]WiFi is not working. Test Canceled\n");
-			return 0;
-		}
 	}
 }
 
@@ -241,11 +157,17 @@ int wakaamaclient_main(int argc, char *argv[])
 		return 0;
 	}
 
-
-
 	if (!g_wakaama_initialized) {
 		app_init_param();
-		wifiAutoConnect();
+		printf("trying connect\n");
+		if (dm_conn_wifi_connect(linkUpEvent, linkDownEvent) != DM_ERROR_NONE) {
+			return -1;
+		}
+		sleep(10);
+		printf("trying dhcp\n");
+		if (dm_conn_dhcp_init() != DM_ERROR_NONE) {
+			return -1;
+		}
 	}
 	opt = 1;
 
@@ -271,8 +193,7 @@ int wakaamaclient_main(int argc, char *argv[])
 				app_print_usage();
 				return 0;
 			}
-			if (1 != sscanf(argv[opt], "%d", \
-							&(dm_context.client_info.lifetime))) {
+			if (1 != sscanf(argv[opt], "%d", &(dm_context.client_info.lifetime))) {
 				app_print_usage();
 				return 0;
 			}
@@ -309,7 +230,6 @@ int wakaamaclient_main(int argc, char *argv[])
 #endif
 		case 'n': {
 			char argbuffer[20];
-			int val = 7;
 			opt++;
 			if (opt >= argc) {
 				app_print_usage();
@@ -356,7 +276,7 @@ int wakaamaclient_main(int argc, char *argv[])
 			return 0;
 		}
 		case 'h': {
-			char *server_port[PORTLEN];
+			char server_port[PORTLEN];
 			int ret;
 
 			if (opt >= argc) {
@@ -393,6 +313,41 @@ int wakaamaclient_main(int argc, char *argv[])
 			}
 			printf("Read a resource value\n");
 			return 0;
+
+		case 'f': {
+			int i;
+			int wifi_count;
+			while (1) {
+				wifi_count = 0;
+				if (dm_conn_wifi_scan() == DM_ERROR_NONE) {
+					printf("DM scan network PASS\n");
+				} else {
+					printf("Failed on wifi scan\n");
+				}
+				sleep(10);
+				if (dm_conn_get_scan_result(&appwifiscan_result) ==  DM_ERROR_NONE) {
+					wifi_iterator = appwifiscan_result;
+					while (wifi_iterator != NULL) {
+						for (i = 0; i < 11; i++) {
+							if (!strncmp(wifi_iterator->ssid, wifi_aps[i], strlen(wifi_aps[i]))) {
+								printf("AP:%d:%s:%s:%d\n", appscan_iteration,
+									   wifi_iterator->ssid,
+									   wifi_iterator->bssid,
+									   wifi_iterator->rssi);
+							}
+						}
+						wifi_count++;
+						wifi_iterator = wifi_iterator->next;
+					}
+				} else {
+					printf("DM_ERROR_NO_DATA\n");
+				}
+				printf("AP:%d:totalAP#:%d\n", appscan_iteration, wifi_count);
+				dm_conn_free_scan_result(&appwifiscan_result);
+				appscan_iteration++;
+			}
+		}
+		return 0;
 
 		case 'x':
 			dm_lwm2m_stop_client();
