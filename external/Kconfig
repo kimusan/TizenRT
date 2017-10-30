@@ -173,3 +173,5 @@ config AWS_SDK
 	---help---
 		enable AWS IoT Device SDK
 
+
+source "../external/wpa_supplicant/Kconfig"
